@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react"
 
+import BackupManager from "../components/BackupManager"
+
+
+
 export default function Configuracoes() {
 
   const [tema, setTema] = useState("light")
@@ -40,7 +44,9 @@ export default function Configuracoes() {
         Configurações
       </h2>
 
-      <div className="card p-4">
+      {/* TEMA */}
+
+      <div className="card p-4 mb-4">
 
         <h5 className="mb-4">
           Tema do sistema
@@ -96,6 +102,10 @@ export default function Configuracoes() {
         </p>
 
       </div>
+
+      {/* BACKUP */}
+
+      <BackupManager />
 
     </div>
 

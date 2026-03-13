@@ -8,6 +8,11 @@ import {
   atualizarCliente
 } from "../services/clientService"
 
+import {
+  garantirPastaCliente,
+  uploadArquivoDrive
+} from "../services/driveService"
+
 import type { Cliente } from "../services/clientService"
 
 export default function ClienteDetalhe() {
@@ -26,6 +31,8 @@ export default function ClienteDetalhe() {
   const [dados, setDados] = useState<Cliente>(cliente)
   const [showModal, setShowModal] = useState(false)
 
+  const [categoriaDocumento, setCategoriaDocumento] = useState("Informes de rendimento")
+
   function mascaraData(valor: string) {
 
     valor = valor.replace(/\D/g, "").slice(0, 8)
@@ -37,15 +44,25 @@ export default function ClienteDetalhe() {
 
   }
 
-  function salvar() {
+  async function salvar() {
 
-    atualizarCliente(dados)
+    await atualizarCliente(dados)
 
     alert("Cliente atualizado!")
 
   }
 
-  function confirmarExclusao() {
+  async function confirmarExclusao() {
+
+    if (dados.driveFolderId) {
+
+      const { deletarPastaDrive } = await import(
+        "../services/driveService"
+      )
+
+      await deletarPastaDrive(dados.driveFolderId)
+
+    }
 
     const filtrados = clientes.filter(
       c => c.id !== dados.id
@@ -118,7 +135,28 @@ export default function ClienteDetalhe() {
 
   }
 
-  function adicionarDocumento(
+  function marcarChecklistAutomatico(categoria: string, checklist: any[]) {
+
+    const mapa: any = {
+      "Informes de rendimento": "Informe de rendimentos",
+      "Bancos": "Informe bancário",
+      "Investimentos": "Informe de investimentos",
+      "Recibos médicos": "Recibos médicos"
+    }
+
+    const nomeChecklist = mapa[categoria]
+
+    if (!nomeChecklist) return checklist
+
+    return checklist.map(item =>
+      item.nome === nomeChecklist
+        ? { ...item, recebido: true }
+        : item
+    )
+
+  }
+
+  async function adicionarDocumento(
     e: React.ChangeEvent<HTMLInputElement>
   ) {
 
@@ -126,35 +164,67 @@ export default function ClienteDetalhe() {
 
     if (!file) return
 
-    const reader = new FileReader()
+    const pasta = await garantirPastaCliente(
+      dados.nome
+    )
 
-    reader.onload = function(event: any) {
+    if (!pasta) return
 
-      const novoDocumento = {
-        id: uuidv4(),
-        nome: file.name,
-        arquivo: event.target.result
-      }
+    const driveFile = await uploadArquivoDrive(
+      file,
+      pasta.id
+    )
 
-      setDados({
-        ...dados,
-        documentos: [...dados.documentos, novoDocumento]
-      })
-
+    const novoDocumento = {
+      id: uuidv4(),
+      nome: file.name,
+      driveId: driveFile.id,
+      categoria: categoriaDocumento
     }
 
-    reader.readAsDataURL(file)
+    const checklistAtualizado = marcarChecklistAutomatico(
+      categoriaDocumento,
+      dados.checklist
+    )
+
+    const novosDados = {
+      ...dados,
+      documentos: [...dados.documentos, novoDocumento],
+      checklist: checklistAtualizado
+    }
+
+    setDados(novosDados)
+
+    await atualizarCliente(novosDados)
 
   }
 
-  function removerDocumento(docId: string) {
+  async function removerDocumento(docId: string) {
 
-    setDados({
+    const documento = dados.documentos.find(
+      d => d.id === docId
+    )
+
+    if (documento?.driveId) {
+
+      const { deletarArquivoDrive } = await import(
+        "../services/driveService"
+      )
+
+      await deletarArquivoDrive(documento.driveId)
+
+    }
+
+    const novosDados = {
       ...dados,
       documentos: dados.documentos.filter(
         d => d.id !== docId
       )
-    })
+    }
+
+    setDados(novosDados)
+
+    await atualizarCliente(novosDados)
 
   }
 
@@ -180,6 +250,14 @@ export default function ClienteDetalhe() {
 
   }
 
+  const categorias = [
+    "Informes de rendimento",
+    "Bancos",
+    "Recibos médicos",
+    "Investimentos",
+    "Outros"
+  ]
+
   return (
 
     <div>
@@ -191,8 +269,6 @@ export default function ClienteDetalhe() {
       <div className="row">
 
         <div className="col-md-6">
-
-          {/* INFORMAÇÕES */}
 
           <div className="card p-3 mb-3">
 
@@ -278,8 +354,6 @@ export default function ClienteDetalhe() {
 
           </div>
 
-          {/* STATUS */}
-
           <div className="card p-3 mb-3">
 
             <h5>Status</h5>
@@ -334,8 +408,6 @@ export default function ClienteDetalhe() {
 
           </div>
 
-          {/* PAGAMENTO */}
-
           <div className="card p-3 mb-3">
 
             <h5>
@@ -361,8 +433,6 @@ export default function ClienteDetalhe() {
             </button>
 
           </div>
-
-          {/* CHECKLIST */}
 
           <div className="card p-3 mb-3">
 
@@ -408,11 +478,21 @@ export default function ClienteDetalhe() {
 
           </div>
 
-          {/* DOCUMENTOS */}
-
           <div className="card p-3">
 
             <h5>Uploads</h5>
+
+            <select
+              className="form-select mb-2"
+              value={categoriaDocumento}
+              onChange={(e) =>
+                setCategoriaDocumento(e.target.value)
+              }
+            >
+              {categorias.map(cat => (
+                <option key={cat}>{cat}</option>
+              ))}
+            </select>
 
             <input
               type="file"
@@ -420,28 +500,50 @@ export default function ClienteDetalhe() {
               onChange={adicionarDocumento}
             />
 
-            {dados.documentos.map(doc => (
+            {categorias.map(cat => (
 
-              <div
-                key={doc.id}
-                className="d-flex justify-content-between mb-2"
-              >
+              <div key={cat} className="mb-3">
 
-                <a
-                  href={doc.arquivo}
-                  download={doc.nome}
-                >
-                  {doc.nome}
-                </a>
+                <strong>{cat}</strong>
 
-                <button
-                  className="btn btn-sm btn-outline-dark"
-                  onClick={() =>
-                    removerDocumento(doc.id)
-                  }
-                >
-                  Excluir
-                </button>
+                {dados.documentos
+                  .filter(doc => doc.categoria === cat)
+                  .map(doc => (
+
+                    <div
+                      key={doc.id}
+                      className="d-flex justify-content-between mb-2"
+                    >
+
+                      <div className="d-flex gap-2">
+
+                        <a
+                          href={`https://drive.google.com/file/d/${doc.driveId}/preview`}
+                          target="_blank"
+                        >
+                          👁 Visualizar
+                        </a>
+
+                        <a
+                          href={`https://drive.google.com/uc?export=download&id=${doc.driveId}`}
+                        >
+                          ⬇ Baixar
+                        </a>
+
+                      </div>
+
+                      <button
+                        className="btn btn-sm btn-outline-dark"
+                        onClick={() =>
+                          removerDocumento(doc.id)
+                        }
+                      >
+                        Excluir
+                      </button>
+
+                    </div>
+
+                  ))}
 
               </div>
 
@@ -450,8 +552,6 @@ export default function ClienteDetalhe() {
           </div>
 
         </div>
-
-        {/* TIMELINE */}
 
         <div className="col-md-6">
 

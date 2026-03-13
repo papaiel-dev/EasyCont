@@ -1,111 +1,95 @@
-export type EventoCliente = {
-  data: string
-  descricao: string
-}
-
-export type Documento = {
-  id: string
-  nome: string
-  arquivo: string
-}
-
-export type ChecklistDocumento = {
-  nome: string
-  recebido: boolean
-}
+import { syncClientes } from "./syncService"
 
 export type Cliente = {
 
   id: string
   nome: string
   cpf: string
-  telefone: string
   email: string
+  telefone: string
   dataNascimento: string
 
   status: string
   pago: boolean
-  valor: number
+  valor?: number
 
-  documentos: Documento[]
-  eventos: EventoCliente[]
+  checklist: {
+    nome: string
+    recebido: boolean
+  }[]
 
-  checklist: ChecklistDocumento[]
+  documentos: {
+    id: string
+    nome: string
+    arquivo?: string
+    categoria?: string
+    driveId?: string
+  }[]
 
-}
+  eventos: {
+    data: string
+    descricao: string
+  }[]
 
-const STORAGE_KEY = "clientes"
-
-function checklistPadrao(): ChecklistDocumento[] {
-
-  return [
-    { nome: "Informe de rendimentos", recebido: false },
-    { nome: "Informe bancário", recebido: false },
-    { nome: "Informe de investimentos", recebido: false },
-    { nome: "Recibos médicos", recebido: false },
-    { nome: "Declaração anterior", recebido: false }
-  ]
+  driveFolderId?: string
 
 }
 
 export function getClientes(): Cliente[] {
 
-  const data = localStorage.getItem(STORAGE_KEY)
+  const dados = localStorage.getItem("clientes")
 
-  if (!data) return []
-
-  const clientes = JSON.parse(data)
-
-  return clientes.map((c: Cliente) => {
-
-    if (!c.checklist) {
-      c.checklist = checklistPadrao()
-    }
-
-    return c
-
-  })
+  return dados ? JSON.parse(dados) : []
 
 }
 
-export function salvarClientes(clientes: Cliente[]) {
-
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify(clientes)
-  )
-
-}
-
-export function adicionarCliente(cliente: Cliente) {
+export async function adicionarCliente(cliente: Cliente) {
 
   const clientes = getClientes()
-
-  cliente.checklist = checklistPadrao()
-
-  cliente.eventos = [
-    {
-      data: new Date().toLocaleString(),
-      descricao: "Cliente criado"
-    }
-  ]
 
   clientes.push(cliente)
 
-  salvarClientes(clientes)
+  localStorage.setItem(
+    "clientes",
+    JSON.stringify(clientes)
+  )
+
+  await syncClientes()
 
 }
 
-export function atualizarCliente(clienteAtualizado: Cliente) {
+export async function atualizarCliente(clienteAtualizado: Cliente) {
 
   const clientes = getClientes()
 
-  const index = clientes.findIndex(
-    c => c.id === clienteAtualizado.id
+  const atualizados = clientes.map((c: Cliente) =>
+    c.id === clienteAtualizado.id
+      ? clienteAtualizado
+      : c
   )
 
-  clientes[index] = clienteAtualizado
+  localStorage.setItem(
+    "clientes",
+    JSON.stringify(atualizados)
+  )
 
-  salvarClientes(clientes)
+  await syncClientes()
+
+}
+
+export async function excluirCliente(id: string) {
+
+  const clientes = getClientes()
+
+  const filtrados = clientes.filter(
+    (c: Cliente) => c.id !== id
+  )
+
+  localStorage.setItem(
+    "clientes",
+    JSON.stringify(filtrados)
+  )
+
+  await syncClientes()
 
 }
