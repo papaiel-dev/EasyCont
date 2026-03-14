@@ -1,76 +1,182 @@
-let accessToken: string | null =
-  localStorage.getItem("drive_token")
+let accessToken: string | null = null
 
 export function setAccessToken(token: string) {
 
   accessToken = token
 
-  localStorage.setItem("drive_token", token)
-
 }
 
-export function getAccessToken() {
+async function garantirTokenDrive(): Promise<string> {
 
-  return accessToken
+  if (accessToken) return accessToken
 
-}
+  return new Promise<string>((resolve) => {
 
-const API = "https://www.googleapis.com/drive/v3"
+    const client = window.google.accounts.oauth2.initTokenClient({
 
-async function driveRequest(
-  url: string,
-  options: any = {}
-) {
+      client_id:
+        "102975317800-cbg1tke8f9lubqh2es5laqol57h5l52q.apps.googleusercontent.com",
 
-  if (!accessToken) {
+      scope: "https://www.googleapis.com/auth/drive.file",
 
-    console.warn("Token de acesso não definido")
+      callback: (tokenResponse: any) => {
 
-    return null
+        accessToken = tokenResponse.access_token
 
-  }
+        resolve(accessToken as string)
 
-  const res = await fetch(`${API}/${url}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    }
+      }
+
+    })
+
+    client.requestAccessToken()
+
   })
 
-  return res.json()
+}
+
+async function driveRequest(url: string, options: any = {}) {
+
+  const token = await garantirTokenDrive()
+
+  return fetch(url, {
+
+    ...options,
+
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {})
+    }
+
+  })
 
 }
 
 export async function inicializarDrive() {
 
+  await garantirTokenDrive()
+
   console.log("Drive inicializado")
 
 }
 
-export async function buscarPasta(nome: string) {
+async function buscarArquivo(nome: string) {
+
+  const query =
+    `name='${nome}' and trashed=false`
+
+  const url =
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)`
+
+  const res = await driveRequest(url)
+
+  const data = await res.json()
+
+  return data.files?.[0] || null
+
+}
+
+export async function salvarBackupDrive(clientes: any[]) {
+
+  const arquivo = await buscarArquivo("easycont_backup.json")
+
+  const conteudo = JSON.stringify(clientes)
+
+  if (!arquivo) {
+
+    await driveRequest(
+      "https://www.googleapis.com/upload/drive/v3/files?uploadType=media",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: conteudo
+      }
+    )
+
+  } else {
+
+    await driveRequest(
+      `https://www.googleapis.com/upload/drive/v3/files/${arquivo.id}?uploadType=media`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: conteudo
+      }
+    )
+
+  }
+
+}
+
+export async function baixarBackup() {
+
+  const arquivo = await buscarArquivo("easycont_backup.json")
+
+  if (!arquivo) return null
+
+  const res = await driveRequest(
+    `https://www.googleapis.com/drive/v3/files/${arquivo.id}?alt=media`
+  )
+
+  return res.json()
+
+}
+
+async function buscarPasta(nome: string) {
 
   const query =
     `name='${nome}' and mimeType='application/vnd.google-apps.folder' and trashed=false`
 
-  const data = await driveRequest(
-    `files?q=${encodeURIComponent(query)}&fields=files(id,name)`
-  )
+  const url =
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)`
 
-  return data?.files?.[0] || null
+  const res = await driveRequest(url)
+
+  const data = await res.json()
+
+  return data.files?.[0] || null
 
 }
 
-export async function criarPasta(nome: string) {
+async function criarPasta(nome: string, parentId?: string) {
 
-  return await driveRequest("files", {
-    method: "POST",
-    body: JSON.stringify({
-      name: nome,
-      mimeType: "application/vnd.google-apps.folder"
-    })
-  })
+  const metadata: any = {
+
+    name: nome,
+
+    mimeType: "application/vnd.google-apps.folder"
+
+  }
+
+  if (parentId) {
+
+    metadata.parents = [parentId]
+
+  }
+
+  const res = await driveRequest(
+
+    "https://www.googleapis.com/drive/v3/files",
+
+    {
+
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify(metadata)
+
+    }
+
+  )
+
+  return res.json()
 
 }
 
@@ -88,14 +194,10 @@ export async function garantirPastaCliente(nomeCliente: string) {
 
   if (!pastaCliente) {
 
-    pastaCliente = await driveRequest("files", {
-      method: "POST",
-      body: JSON.stringify({
-        name: nomeCliente,
-        mimeType: "application/vnd.google-apps.folder",
-        parents: [pastaClientes.id]
-      })
-    })
+    pastaCliente = await criarPasta(
+      nomeCliente,
+      pastaClientes.id
+    )
 
   }
 
@@ -104,13 +206,19 @@ export async function garantirPastaCliente(nomeCliente: string) {
 }
 
 export async function uploadArquivoDrive(
-  file: File,
+
+  arquivo: File,
+
   pastaId: string
+
 ) {
 
   const metadata = {
-    name: file.name,
+
+    name: arquivo.name,
+
     parents: [pastaId]
+
   }
 
   const form = new FormData()
@@ -122,17 +230,26 @@ export async function uploadArquivoDrive(
     })
   )
 
-  form.append("file", file)
+  form.append("file", arquivo)
+
+  const token = await garantirTokenDrive()
 
   const res = await fetch(
+
     "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+
     {
+
       method: "POST",
+
       headers: {
-        Authorization: `Bearer ${accessToken}`
+        Authorization: `Bearer ${token}`
       },
+
       body: form
+
     }
+
   )
 
   return res.json()
@@ -141,88 +258,28 @@ export async function uploadArquivoDrive(
 
 export async function deletarArquivoDrive(fileId: string) {
 
-  await fetch(`${API}/files/${fileId}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${accessToken}`
-    }
-  })
+  await driveRequest(
 
-}
+    `https://www.googleapis.com/drive/v3/files/${fileId}`,
 
-export async function deletarPastaDrive(pastaId: string) {
-
-  await deletarArquivoDrive(pastaId)
-
-}
-
-export async function baixarBackup() {
-
-  const query =
-    "name='easycont_backup.json' and trashed=false"
-
-  const lista = await driveRequest(
-    `files?q=${encodeURIComponent(query)}&fields=files(id,name)`
-  )
-
-  const arquivo = lista?.files?.[0]
-
-  if (!arquivo) return null
-
-  const res = await fetch(
-    `${API}/files/${arquivo.id}?alt=media`,
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
+      method: "DELETE"
     }
-  )
 
-  return res.json()
+  )
 
 }
 
-export async function salvarBackupDrive(clientes: any[]) {
+export async function deletarPastaDrive(folderId: string) {
 
-  const conteudo = JSON.stringify(clientes)
+  await driveRequest(
 
-  const query =
-    "name='easycont_backup.json' and trashed=false"
+    `https://www.googleapis.com/drive/v3/files/${folderId}`,
 
-  const lista = await driveRequest(
-    `files?q=${encodeURIComponent(query)}&fields=files(id,name)`
+    {
+      method: "DELETE"
+    }
+
   )
-
-  const arquivo = lista?.files?.[0]
-
-  if (arquivo) {
-
-    await fetch(
-      `https://www.googleapis.com/upload/drive/v3/files/${arquivo.id}?uploadType=media`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json"
-        },
-        body: conteudo
-      }
-    )
-
-  } else {
-
-    await fetch(
-      "https://www.googleapis.com/upload/drive/v3/files?uploadType=media",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json"
-        },
-        body: conteudo
-      }
-    )
-
-  }
 
 }

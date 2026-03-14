@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 import Layout from "./components/Layout"
 
@@ -16,12 +16,46 @@ import Login from "./auth/Login"
 import ProtectedRoute from "./auth/ProtectedRoute"
 
 import { obterUsuario } from "./auth/authService"
+import { baixarBackup } from "./services/driveService"
 
 function App() {
 
   const [usuario, setUsuario] = useState(
     obterUsuario()
   )
+
+  const [sistemaPronto, setSistemaPronto] = useState(false)
+
+  useEffect(() => {
+
+    async function iniciar() {
+
+      try {
+
+        const backup = await baixarBackup()
+
+        if (backup) {
+
+          localStorage.setItem(
+            "clientes",
+            JSON.stringify(backup)
+          )
+
+        }
+
+      } catch (err) {
+
+        console.log("Drive ainda não autorizado")
+
+      }
+
+      setSistemaPronto(true)
+
+    }
+
+    if (usuario) iniciar()
+
+  }, [usuario])
 
   function handleLogin() {
 
@@ -31,20 +65,23 @@ function App() {
 
   }
 
+  if (!usuario) {
+
+    return <Login onLogin={handleLogin} />
+
+  }
+
+  if (!sistemaPronto) {
+
+    return <div>Sincronizando dados...</div>
+
+  }
+
   return (
 
     <BrowserRouter>
 
       <Routes>
-
-        <Route
-          path="/login"
-          element={
-            usuario
-              ? <Navigate to="/" replace />
-              : <Login onLogin={handleLogin} />
-          }
-        />
 
         <Route
           element={

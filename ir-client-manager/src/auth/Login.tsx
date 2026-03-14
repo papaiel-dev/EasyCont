@@ -1,6 +1,5 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { salvarUsuario, usuarioAutorizado } from "./authService"
-import { setAccessToken } from "../services/driveService"
 
 declare global {
   interface Window {
@@ -8,17 +7,25 @@ declare global {
   }
 }
 
-export default function Login({ onLogin }: any) {
+interface LoginProps {
+  onLogin: () => void
+}
+
+export default function Login({ onLogin }: LoginProps) {
+
+  const iniciou = useRef(false)
 
   useEffect(() => {
 
-    const google = window.google
+    if (iniciou.current) return
+    iniciou.current = true
 
+    const google = window.google
     if (!google) return
 
     google.accounts.id.initialize({
       client_id: "102975317800-cbg1tke8f9lubqh2es5laqol57h5l52q.apps.googleusercontent.com",
-      callback: handleCredentialResponse
+      callback: handleLogin
     })
 
     google.accounts.id.renderButton(
@@ -32,7 +39,7 @@ export default function Login({ onLogin }: any) {
 
   }, [])
 
-  function handleCredentialResponse(response: any) {
+  function handleLogin(response: any) {
 
     const dados = JSON.parse(
       atob(response.credential.split(".")[1])
@@ -47,40 +54,13 @@ export default function Login({ onLogin }: any) {
     if (!usuarioAutorizado(usuario.email)) {
 
       alert("Seu email não está autorizado a usar o EasyCont.")
-
       return
 
     }
 
-    solicitarPermissaoDrive(usuario)
+    salvarUsuario(usuario)
 
-  }
-
-  function solicitarPermissaoDrive(usuario: any) {
-
-    const client = window.google.accounts.oauth2.initTokenClient({
-
-      client_id: "102975317800-cbg1tke8f9lubqh2es5laqol57h5l52q.apps.googleusercontent.com",
-
-      scope: "https://www.googleapis.com/auth/drive.file",
-
-      callback: (tokenResponse: any) => {
-
-        setAccessToken(tokenResponse.access_token)
-
-        salvarUsuario(usuario)
-
-        setTimeout(() => {
-
-          onLogin()
-
-        }, 50)
-
-      }
-
-    })
-
-    client.requestAccessToken()
+    onLogin()
 
   }
 
@@ -98,18 +78,11 @@ export default function Login({ onLogin }: any) {
       }}
     >
 
-      <h2
-        style={{
-          color: "#1f4d3e",
-          fontWeight: "bold"
-        }}
-      >
+      <h2 style={{ color: "#1f4d3e" }}>
         EasyCont
       </h2>
 
-      <p>
-        Gerenciamento de clientes IR
-      </p>
+      <p>Gerenciamento de clientes IR</p>
 
       <div id="googleButton"></div>
 
