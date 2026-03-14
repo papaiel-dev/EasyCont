@@ -1,295 +1,284 @@
 # EasyCont
 
-EasyCont é um sistema CRM desenvolvido para auxiliar contadores no gerenciamento de clientes de **Imposto de Renda (IR)**.
+EasyCont é um sistema CRM desenvolvido para auxiliar contadores no gerenciamento de clientes de **Imposto de Renda (IRPF)**.
 
 O sistema permite organizar clientes, acompanhar o status das declarações, gerenciar documentos enviados, controlar pagamentos e visualizar pendências de forma rápida.
 
-O objetivo é centralizar o fluxo de trabalho do contador em um único painel simples e eficiente.
+Projeto desenvolvido inicialmente para uso real em escritório contábil.
 
 ---
 
-# Funcionalidades atuais
+# Demonstração
 
-## Dashboard inicial
-A página inicial apresenta um **painel de controle do escritório**, mostrando:
-
-- clientes cadastrados
-- clientes em andamento
-- clientes aguardando documentos
-- clientes com pagamento pendente
-
-Também exibe **pendências clicáveis**, permitindo abrir diretamente o perfil do cliente.
+https://easycont.vercel.app
 
 ---
 
-## Gerenciamento de clientes
+# Objetivo do projeto
 
-O sistema possui um **CRUD completo de clientes**.
+O objetivo do EasyCont é simplificar o fluxo de trabalho do contador durante a temporada de Imposto de Renda, centralizando:
 
-Cada cliente possui:
+- informações dos clientes
+- documentos enviados
+- status da declaração
+- controle de pagamentos
+- histórico de eventos
 
-- Nome
+---
+
+# Principais funcionalidades
+
+### Cadastro de clientes
+
+Permite registrar:
+
+- nome
 - CPF
-- Email
-- Telefone
-- Data de nascimento
-- Valor cobrado pelo serviço
-
-O cadastro pode ser **editado a qualquer momento**.
-
-Também é possível **excluir o cliente** com confirmação via modal.
+- telefone
+- email
+- data de nascimento
 
 ---
-
-## Perfil do cliente
-
-Cada cliente possui um painel próprio contendo:
-
-### Informações pessoais
-Dados básicos do cliente com edição rápida.
 
 ### Status da declaração
 
-Fluxo atual:
+Fluxo de acompanhamento:
 
 - Aguardando documentos
 - Em andamento
 - Declaração enviada
 - Finalizado
 
-Existe uma **barra de progresso visual** baseada no status.
-
 ---
 
-### Controle de pagamento
+### Checklist de documentos
 
-O sistema permite marcar o pagamento como:
+Cada cliente possui um checklist configurável de documentos necessários.
 
-- Pago
-- Pendente
+Exemplo:
 
-O status aparece como **badge visual** no painel.
+- Informe de rendimentos
+- Informe bancário
+- Recibos médicos
+- Investimentos
+
+O progresso é exibido visualmente através de barra de progresso.
 
 ---
 
 ### Upload de documentos
 
-É possível anexar documentos ao cliente.
+Os documentos podem ser enviados diretamente no perfil do cliente.
 
-Cada documento pode ser:
+Os arquivos são armazenados no **Google Drive do contador**, organizados automaticamente.
 
-- baixado
-- removido
+Estrutura no Drive:
 
-Os arquivos ficam armazenados localmente (localStorage) nesta versão.
+EasyCont  
+Clientes  
+Nome do cliente  
+Documentos
 
 ---
 
-### Timeline de atividades
+### Visualização e download
 
-Toda ação relevante gera um evento automático:
+Dentro do CRM é possível:
+
+- visualizar documento
+- baixar documento
+- excluir documento
+
+---
+
+### Timeline de eventos
+
+Cada ação gera um registro no histórico do cliente.
 
 Exemplos:
 
-- Cliente criado
-- Status alterado
-- Documento enviado
-- Pagamento recebido
-
-Isso cria um histórico completo do cliente.
+- alteração de status
+- confirmação de pagamento
+- envio de documento
 
 ---
 
-## Financeiro
+### Controle de pagamento
 
-O sistema calcula automaticamente:
+Cada cliente pode ser marcado como:
 
-- valores cobrados
-- pagamentos recebidos
-- pendências
-
-Permitindo controle simples do faturamento.
+- pago
+- pendente
 
 ---
 
-## Relatórios
+### Dashboard
 
-Área destinada para relatórios com base em filtros.
+O painel principal exibe informações importantes:
 
-Exemplos possíveis:
-
-- clientes finalizados
-- clientes em andamento
-- clientes sem pagamento
-
----
-
-## Dark Mode
-
-O sistema possui **modo claro e modo escuro**, com alternância nas configurações.
-
-O tema escolhido é salvo no `localStorage` e carregado automaticamente ao abrir o sistema.
+- prazo do IRPF
+- documentos pendentes
+- pagamentos pendentes
+- clientes com documentação completa
 
 ---
 
-## Interface
+### Backup automático
 
-O layout atual utiliza:
+O sistema gera backup automático dos dados no Google Drive do usuário.
 
-- React
-- Vite
-- Bootstrap
-- Sidebar estilo SaaS
+Arquivo:
 
-Navegação lateral:
-
-```
-Home
-Dashboard
-Clientes
-Financeiro
-Relatórios
-Configurações
-```
-
----
-
-# Estrutura do projeto
-
-```
-src
- ├ components
- │   ├ Sidebar
- │   └ Layout
- │
- ├ pages
- │   ├ Home
- │   ├ Dashboard
- │   ├ Clientes
- │   ├ NovoCliente
- │   ├ ClienteDetalhe
- │   ├ Financeiro
- │   ├ Relatorios
- │   └ Configuracoes
- │
- ├ services
- │   └ clientService
- │
- ├ styles
- │   └ home.css
- │
- ├ App.tsx
- └ main.tsx
-```
+easycont_backup.json
 
 ---
 
 # Tecnologias utilizadas
 
+Frontend
+
 - React
 - TypeScript
 - Vite
-- Bootstrap 5
-- React Router
-- UUID
-- LocalStorage (temporário)
+- Bootstrap
+
+Armazenamento
+
+- Google Drive API
+- LocalStorage
+
+Autenticação
+
+- Google Login (OAuth)
+
+Deploy
+
+- Vercel
 
 ---
 
-# Roadmap de desenvolvimento
+# Estrutura do projeto
 
-## V1.1 — Checklist de documentos
-Adicionar lista de documentos obrigatórios por cliente.
+Principais módulos
 
-Exemplo:
-
-```
-Documentos necessários
-
-☐ Informe de rendimentos
-☐ Informe bancário
-☐ Informe de investimentos
-☐ Recibos médicos
-☐ Declaração anterior
-```
-
-Benefícios:
-
-- controle do que falta
-- integração com pendências da Home
-- progresso de documentação
+auth → login e autenticação  
+services → integração com Google Drive  
+pages → telas do sistema  
+components → layout e elementos reutilizáveis  
 
 ---
 
-## V1.2 — Upload organizado por categoria
+# Status do projeto
 
-Organizar arquivos por tipo:
+Versão atual: **v1 (MVP funcional)**
 
-```
-Informes de rendimento
-Recibos médicos
-Extratos bancários
-Investimentos
-```
-
-Melhora a organização para declaração.
+O sistema já está em uso real por um contador para testes.
 
 ---
 
-## V1.3 — Integração com Google Drive
+# Próximos fixes (curto prazo)
 
-Cada cliente terá uma pasta automática no Drive:
+### 1. Corrigir login duplo
 
-```
-EasyCont
- ├ Cliente 1
- │   ├ Informes
- │   ├ Bancos
- │   └ Recibos
-```
+Hoje o sistema realiza:
 
-Uploads feitos no sistema serão enviados diretamente ao Drive.
+Login Google  
+Autorização Google Drive
 
-Benefícios:
-
-- backup automático
-- armazenamento ilimitado
-- compartilhamento fácil
+Fluxo será simplificado para apenas um login.
 
 ---
 
-## V1.4 — Login com Google
+### 2. Melhorar experiência mobile
 
-Usuários poderão entrar usando:
+Ajustes necessários:
 
-```
-Login com Google
-```
-
-O sistema utilizará o Drive da conta conectada para armazenamento.
-
----
-
-# Possível evolução do produto
-
-O EasyCont pode evoluir para um **SaaS para contadores**.
-
-Possível modelo de negócio:
-
-Plano Básico  
-até 100 clientes
-
-Plano Profissional  
-clientes ilimitados + Google Drive
+- sidebar responsiva
+- botões maiores
+- melhor organização de cards
+- menu mobile
 
 ---
 
-# Objetivo do projeto
+### 3. Tornar backup mais visível
 
-Criar um sistema simples e eficiente para gestão de clientes de imposto de renda, com potencial de evolução para uma plataforma profissional utilizada por contadores.
+Adicionar indicador na Home:
+
+Último backup realizado  
+Botão para backup manual
 
 ---
 
-# Autor
+### 4. Melhorar fluxo de upload
 
-Projeto desenvolvido por **Rafael Oliveira**.
+Evitar duplicação de arquivos e melhorar feedback visual ao enviar documentos.
+
+---
+
+### 5. Melhorar mensagens de erro
+
+Adicionar mensagens mais claras para:
+
+- falha de upload
+- falha de backup
+- erro de autenticação
+
+---
+
+# Próximos updates (roadmap)
+
+## V1.1
+
+Melhorias de usabilidade.
+
+- layout mobile melhorado
+- indicador de backup na home
+- melhorias na barra lateral
+- feedback visual ao salvar alterações
+- melhorias na timeline
+
+---
+
+## V1.2
+
+Automação de fluxo de documentos.
+
+- geração de link para envio de documentos
+- cliente envia arquivos diretamente
+- documentos aparecem automaticamente no CRM
+
+---
+
+## V1.3
+
+Ferramentas para contadores.
+
+- filtro de clientes
+- busca por nome ou CPF
+- relatório de clientes pendentes
+- relatório de pagamentos
+
+---
+
+## V2.0
+
+Transformação do sistema em plataforma multi-contador.
+
+- múltiplos usuários
+- separação de contas
+- controle de permissões
+- painel administrativo
+
+---
+
+# Contribuição
+
+Este projeto ainda está em fase inicial de desenvolvimento.
+
+Sugestões de melhoria e feedback são bem-vindos.
+
+---
+
+# Licença
+
+Projeto em desenvolvimento.
