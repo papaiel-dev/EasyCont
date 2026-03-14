@@ -70,7 +70,11 @@ export default function Login({ onLogin }: any) {
 
         salvarUsuario(usuario)
 
-        onLogin()
+        setTimeout(() => {
+
+          onLogin()
+
+        }, 50)
 
       }
 
@@ -96,18 +100,14 @@ export default function Login({ onLogin }: any) {
 
       <h2
         style={{
-          fontWeight: "bold",
-          color: "#1f4d3e"
+          color: "#1f4d3e",
+          fontWeight: "bold"
         }}
       >
         EasyCont
       </h2>
 
-      <p
-        style={{
-          color: "#555"
-        }}
-      >
+      <p>
         Gerenciamento de clientes IR
       </p>
 

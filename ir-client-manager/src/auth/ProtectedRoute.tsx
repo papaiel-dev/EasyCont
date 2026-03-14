@@ -7,7 +7,7 @@ export default function ProtectedRoute({ children }: any) {
 
   if (!usuario) {
 
-    return <Navigate to="/" replace />
+    return <Navigate to="/login" replace />
 
   }
 

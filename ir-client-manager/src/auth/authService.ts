@@ -1,5 +1,3 @@
-import { emailsAutorizados } from "../config/autorizados"
-
 export function salvarUsuario(usuario: any) {
 
   localStorage.setItem(
@@ -11,24 +9,26 @@ export function salvarUsuario(usuario: any) {
 
 export function obterUsuario() {
 
-  const usuario = localStorage.getItem("usuario")
+  const dados = localStorage.getItem("usuario")
 
-  if (!usuario) return null
+  if (!dados) return null
 
-  return JSON.parse(usuario)
+  return JSON.parse(dados)
+
+}
+
+export function usuarioAutorizado(email: string) {
+
+  const autorizados = [
+    "89oliveirarafael@gmail.com"
+  ]
+
+  return autorizados.includes(email)
 
 }
 
 export function logout() {
 
   localStorage.removeItem("usuario")
-
-  window.location.reload()
-
-}
-
-export function usuarioAutorizado(email: string) {
-
-  return emailsAutorizados.includes(email)
 
 }
