@@ -1,4 +1,4 @@
-# EasyCont
+# EasyCont v1
 
 EasyCont é um sistema CRM desenvolvido para auxiliar contadores no gerenciamento de clientes de **Imposto de Renda (IR)**.
 
