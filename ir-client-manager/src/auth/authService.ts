@@ -20,7 +20,7 @@ export function obterUsuario() {
 export function usuarioAutorizado(email: string) {
 
   const autorizados = [
-    "89oliveirarafael@gmail.com"
+    "89oliveirarafael@gmail.com", "mariane.pintenho@gmail.com", "mariane.pintenho.contabil@gmail.com"
   ]
 
   return autorizados.includes(email)
