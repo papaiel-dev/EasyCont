@@ -164,40 +164,48 @@ export default function ClienteDetalhe() {
 
   }
 
-  async function adicionarDocumento(
+  // 🚀 NOVA FUNÇÃO MULTI-UPLOAD
+  async function adicionarDocumentos(
     e: React.ChangeEvent<HTMLInputElement>
   ) {
 
-    const file = e.target.files?.[0]
+    const files = e.target.files
 
-    if (!file) return
+    if (!files || files.length === 0) return
 
-    const pasta = await garantirPastaCliente(
-      dados.nome
-    )
+    const pasta = await garantirPastaCliente(dados.nome)
 
     if (!pasta) return
 
-    const driveFile = await uploadArquivoDrive(
-      file,
-      pasta.id
-    )
+    let novosDocumentos = [...dados.documentos]
+    let checklistAtualizado = [...dados.checklist]
 
-    const novoDocumento = {
-      id: uuidv4(),
-      nome: file.name,
-      driveId: driveFile.id,
-      categoria: categoriaDocumento
+    for (const file of Array.from(files)) {
+
+      const driveFile = await uploadArquivoDrive(
+        file,
+        pasta.id
+      )
+
+      const novoDocumento = {
+        id: uuidv4(),
+        nome: file.name,
+        driveId: driveFile.id,
+        categoria: categoriaDocumento
+      }
+
+      novosDocumentos.push(novoDocumento)
+
+      checklistAtualizado = marcarChecklistAutomatico(
+        categoriaDocumento,
+        checklistAtualizado
+      )
+
     }
-
-    const checklistAtualizado = marcarChecklistAutomatico(
-      categoriaDocumento,
-      dados.checklist
-    )
 
     const novosDados = {
       ...dados,
-      documentos: [...dados.documentos, novoDocumento],
+      documentos: novosDocumentos,
       checklist: checklistAtualizado
     }
 
@@ -342,7 +350,6 @@ export default function ClienteDetalhe() {
               }
             />
 
-            {/* NOVO CAMPO */}
             <label>Valor (R$)</label>
             <input
               className="form-control mb-2"
@@ -516,10 +523,12 @@ export default function ClienteDetalhe() {
               ))}
             </select>
 
+            {/* 🚀 MULTI-UPLOAD */}
             <input
               type="file"
+              multiple
               className="form-control mb-3"
-              onChange={adicionarDocumento}
+              onChange={adicionarDocumentos}
             />
 
             {categorias.map(cat => (
