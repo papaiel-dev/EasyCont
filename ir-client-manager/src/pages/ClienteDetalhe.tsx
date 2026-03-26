@@ -44,6 +44,14 @@ export default function ClienteDetalhe() {
 
   }
 
+  function formatarValor(valor: string) {
+
+    const numero = valor.replace(/\D/g, "")
+
+    return numero
+
+  }
+
   async function salvar() {
 
     await atualizarCliente(dados)
@@ -332,6 +340,20 @@ export default function ClienteDetalhe() {
                   dataNascimento: mascaraData(e.target.value)
                 })
               }
+            />
+
+            {/* NOVO CAMPO */}
+            <label>Valor (R$)</label>
+            <input
+              className="form-control mb-2"
+              value={dados.valor || ""}
+              onChange={(e) =>
+                setDados({
+                  ...dados,
+                  valor: Number(formatarValor(e.target.value))
+                })
+              }
+              placeholder="Ex: 500"
             />
 
             <button
